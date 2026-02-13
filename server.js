@@ -1,54 +1,62 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
-require("dotenv").config();
-
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-/**
- * ROTA TESTE
- */
+// ROTA RAIZ
 app.get("/", (req, res) => {
-  res.send("🚀 Duckbet backend rodando com sucesso!");
+  res.send("🦆 DUCKBET Backend Online!");
 });
 
-/**
- * ROTA PIX
- */
-app.post("/api/deposit/pix", async (req, res) => {
+// FUNÇÃO PARA MONTAR AUTH BASIC
+function getBasicAuth() {
+  const secret = process.env.GHOST_SECRET_KEY;
+  const company = process.env.GHOST_COMPANY_ID;
+  const token = Buffer.from(`${secret}:${company}`).toString("base64");
+  return `Basic ${token}`;
+}
+
+// ====== CRIAR PAGAMENTO ======
+app.post("/api/payment", async (req, res) => {
   try {
-    const { amount } = req.body;
+    const body = req.body;
 
-    if (!amount) {
-      return res.status(400).json({ error: "Valor é obrigatório" });
-    }
+    const response = await axios.post(
+      "https://api.ghostspaysv2.com/functions/v1/transactions",
+      body,
+      {
+        headers: {
+          Authorization: getBasicAuth(),
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-    // ⚠️ Aqui você colocará sua integração real depois
-    // Por enquanto é apenas teste
-
-    return res.json({
-      success: true,
-      message: "PIX criado com sucesso (modo teste)",
-      amount: amount
-    });
-
+    return res.json(response.data);
   } catch (error) {
-    console.error("Erro ao criar PIX:", error.message);
-
-    return res.status(500).json({
-      error: "Erro interno ao criar PIX"
-    });
+    console.error("Erro GhostsPay:", error.response?.data || error.message);
+    return res.status(500).json({ error: "Erro ao criar pagamento" });
   }
 });
 
-/**
- * PORTA DINÂMICA PARA RENDER
- */
-const PORT = process.env.PORT || 3000;
+// ====== WEBHOOK ======
+app.post("/api/webhook/ghostpay", (req, res) => {
+  const event = req.body;
+  console.log("WEBHOOK RECEIVED:", event);
 
-app.listen(PORT, () => {
-  console.log(`🔥 Servidor rodando na porta ${PORT}`);
+  // Aqui você pode atualizar saldo do usuário manualmente
+  // ou salvar no banco de dados
+
+  res.sendStatus(200);
 });
+
+// ====== START ======
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🔥 DUCKBET API rodando na porta ${PORT}`);
+});
+
