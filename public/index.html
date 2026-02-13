@@ -71,6 +71,7 @@
 
 <div class="container">
   <h2>💰 Depositar</h2>
+<input type="text" id="username" placeholder="Usuário da Duckbet">
 
   <select id="method">
     <option value="pix">PIX</option>
@@ -107,18 +108,21 @@
   async function deposit() {
     const amount = document.getElementById("amount").value * 100;
     const method = methodSelect.value;
+    const username = document.getElementById("username").value;
 
     let payload = {
-      amount: amount,
-      currency: "BRL",
-      paymentMethod: method,
-      customer: {
-        name: "Cliente Teste",
-        email: "cliente@email.com",
-        document: "12345678900"
-      },
-      postbackUrl: window.location.origin + "/api/webhook/ghostpay"
-    };
+  amount: amount,
+  currency: "BRL",
+  paymentMethod: method,
+  reference: username,
+  customer: {
+    name: username,
+    email: "cliente@email.com",
+    document: "12345678900"
+  },
+  postbackUrl: window.location.origin + "/api/webhook/ghostpay"
+};
+
 
     if (method === "credit_card") {
       payload.card = {
